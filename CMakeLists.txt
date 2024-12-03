@@ -16,15 +16,12 @@ include(${CPM_DOWNLOAD_LOCATION})
 
 # Find Vulkan
 find_package(Vulkan REQUIRED)
-
-if((NOT Vulkan_GLSLANG_VALIDATOR_EXECUTABLE) OR (NOT Vulkan_GLSLC_EXECUTABLE))
+if(NOT Vulkan_SLANGC_EXECUTABLE)
     get_filename_component(_Vulkan_LIB_DIR ${Vulkan_LIBRARY} DIRECTORY)
-    find_program(Vulkan_GLSLANG_VALIDATOR_EXECUTABLE
-        NAMES glslangValidator
-        HINTS ${_Vulkan_LIB_DIR}/../Bin)
-    find_program(Vulkan_GLSLC_EXECUTABLE
-        NAMES glslc
-        HINTS ${_Vulkan_LIB_DIR}/../Bin)
+    find_program(Vulkan_SLANGC_EXECUTABLE
+        NAMES slangc
+        HINTS ${_Vulkan_LIB_DIR}/../Bin
+    )
 endif()
 
 # Add the executable
@@ -150,11 +147,7 @@ endforeach()
 
 #------------------------------------------------------------------------------------------------------------------------------
 # Find Slang compiler
-find_program(SLANGC_EXECUTABLE
-    NAMES slangc
-    HINTS ${_Vulkan_LIB_DIR}/../Bin
-)
-if( SLANGC_EXECUTABLE)
+if( Vulkan_SLANGC_EXECUTABLE)
     # Initialize variables
     set(USE_GLSL OFF )
     set(USE_SLANG OFF)
@@ -185,7 +178,7 @@ if( SLANGC_EXECUTABLE)
       get_filename_component(SHADER_NAME ${SHADER} NAME)
       string(REPLACE "." "_" VN_SHADER_NAME ${SHADER_NAME})
       set(OUTPUT_FILE "${CMAKE_BINARY_DIR}/_autogen/${SHADER_NAME}.h")
-      set(_COMMAND ${SLANGC_EXECUTABLE} 
+      set(_COMMAND ${Vulkan_SLANGC_EXECUTABLE} 
         ${_SLANG_FLAGS} 
         -source-embed-name ${VN_SHADER_NAME}
         -o ${OUTPUT_FILE} ${SHADER})
