@@ -1094,8 +1094,18 @@ public:
     const VkPresentModeKHR    presentMode    = selectSwapPresentMode(presentModes, vSync);
     // Set the window size according to the surface's current extent
     outWindowSize = capabilities2.surfaceCapabilities.currentExtent;
-    // Set the number of images in flight, respecting GPU limitations
-    m_maxFramesInFlight = std::min(m_maxFramesInFlight, capabilities2.surfaceCapabilities.maxImageCount);
+
+    // Adjust the number of images in flight within GPU limitations
+    uint32_t minImageCount       = capabilities2.surfaceCapabilities.minImageCount;  // Vulkan-defined minimum
+    uint32_t preferredImageCount = std::max(3u, minImageCount);  // Prefer 3, but respect minImageCount
+
+    // Handle the maxImageCount case where 0 means "no upper limit"
+    uint32_t maxImageCount = (capabilities2.surfaceCapabilities.maxImageCount == 0) ? preferredImageCount :  // No upper limit, use preferred
+                                 capabilities2.surfaceCapabilities.maxImageCount;
+
+    // Clamp preferredImageCount to valid range [minImageCount, maxImageCount]
+    m_maxFramesInFlight = std::clamp(preferredImageCount, minImageCount, maxImageCount);
+
     // Store the chosen image format
     m_imageFormat = surfaceFormat2.surfaceFormat.format;
 
