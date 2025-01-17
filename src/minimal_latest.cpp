@@ -896,6 +896,9 @@ private:
       m_deviceExtensions.push_back(VK_EXT_SWAPCHAIN_MAINTENANCE_1_EXTENSION_NAME);
     }
 
+    // ImGui - Fix (Not using Vulkan 1.3 API) 
+    m_deviceExtensions.push_back(VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME);
+
     // Requesting all supported features, which will then be activated in the device
     // By requesting, it turns on all feature that it is supported, but the user could request specific features instead
     m_deviceFeatures.pNext = &m_features11;
@@ -2102,6 +2105,13 @@ public:
 
       // ImGui::ShowDemoWindow();
       drawFrame();
+      // Update and Render additional Platform Windows (floating windows)
+      if((ImGui::GetIO().ConfigFlags & ImGuiConfigFlags_ViewportsEnable) != 0)
+      {
+        ImGui::UpdatePlatformWindows();
+        ImGui::RenderPlatformWindowsDefault();
+      }
+
       ImGui::EndFrame();
     }
   }
@@ -3033,7 +3043,7 @@ private:
     ImGui::StyleColorsDark();
 
     ImGui_ImplGlfw_InitForVulkan(m_window, true);
-    VkFormat                  imageFormats[] = {m_swapchain.getImageFormat()};
+    static VkFormat           imageFormats[] = {m_swapchain.getImageFormat()};
     ImGui_ImplVulkan_InitInfo initInfo       = {
               .Instance                    = m_context.getInstance(),
               .PhysicalDevice              = m_context.getPhysicalDevice(),
@@ -3054,7 +3064,7 @@ private:
 
     ImGui_ImplVulkan_Init(&initInfo);
 
-    ImGui::GetIO().ConfigFlags = ImGuiConfigFlags_DockingEnable;
+    ImGui::GetIO().ConfigFlags = ImGuiConfigFlags_DockingEnable | ImGuiConfigFlags_ViewportsEnable;
   }
 
   /*--
