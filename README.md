@@ -1,7 +1,9 @@
 # Modern Vulkan Application Sample
 ![appImg](doc/app.png)
 
-This repository demonstrates contemporary Vulkan API usage patterns in a single, comprehensive file. The example showcases Vulkan 1.3 core functionality along with maintenance 6 features, implemented with current best practices.
+
+This repository demonstrates contemporary Vulkan API usage patterns in a single, comprehensive file. The example showcases Vulkan 1.4 core functionality, implemented with current best practices. Therefore, Vulkan 1.4 is mandatory.
+
 
 > **Note**: This is not intended as a tutorial, but rather as a reference implementation demonstrating modern Vulkan development techniques.
 

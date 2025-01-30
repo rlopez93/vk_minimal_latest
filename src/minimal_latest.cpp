@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2023-2024, NVIDIA CORPORATION.  All rights reserved.
+ * Copyright (c) 2023-2025, NVIDIA CORPORATION.  All rights reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -13,7 +13,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  *
- * SPDX-FileCopyrightText: Copyright (c) 2023-2024, NVIDIA CORPORATION.
+ * SPDX-FileCopyrightText: Copyright (c) 2023-2025, NVIDIA CORPORATION.
  * SPDX-License-Identifier: Apache-2.0
  */
 
@@ -21,7 +21,7 @@
 
 # Modern Vulkan Sample Application
 
-This sample demonstrates how to create a modern Vulkan application using Vulkan 1.3 
+This sample demonstrates how to create a modern Vulkan application using Vulkan 1.4 
 features and best practices in a single, self-contained file. It is quite long but 
 covers what is needed to create a Vulkan application that is efficient, modern, and
 can be used as a starting point for more complex applications.
@@ -662,13 +662,13 @@ public:
   VkPhysicalDevice getPhysicalDevice() const { return m_physicalDevice; }
   VkInstance       getInstance() const { return m_instance; }
   const QueueInfo& getGraphicsQueue() const { return m_queues[0]; }
+  uint32_t         getApiVersion() const { return m_apiVersion; }
 
   VkPhysicalDeviceFeatures2                        getPhysicalDeviceFeatures() const { return m_deviceFeatures; }
   VkPhysicalDeviceVulkan11Features                 getVulkan11Features() const { return m_features11; }
   VkPhysicalDeviceVulkan12Features                 getVulkan12Features() const { return m_features12; }
   VkPhysicalDeviceVulkan13Features                 getVulkan13Features() const { return m_features13; }
-  VkPhysicalDeviceMaintenance5FeaturesKHR          getMaintenance5Features() const { return m_maintenance5Features; }
-  VkPhysicalDeviceMaintenance6FeaturesKHR          getMaintenance6Features() const { return m_maintenance6Features; }
+  VkPhysicalDeviceVulkan14Features                 getVulkan14Features() const { return m_features14; }
   VkPhysicalDeviceExtendedDynamicStateFeaturesEXT  getDynamicStateFeatures() const { return m_dynamicStateFeatures; }
   VkPhysicalDeviceExtendedDynamicState2FeaturesEXT getDynamicState2Features() const { return m_dynamicState2Features; }
   VkPhysicalDeviceExtendedDynamicState3FeaturesEXT getDynamicState3Features() const { return m_dynamicState3Features; }
@@ -702,6 +702,10 @@ private:
 
   void initInstance()
   {
+    vkEnumerateInstanceVersion(&m_apiVersion);
+    LOGI("VULKAN API: %d.%d", VK_VERSION_MAJOR(m_apiVersion), VK_VERSION_MINOR(m_apiVersion));
+    ASSERT(m_apiVersion >= VK_MAKE_API_VERSION(0, 1, 4, 0), "Require Vulkan 1.4 loader");
+
     // This finds the KHR surface extensions needed to display on the right platform
     uint32_t     glfwExtensionCount = 0;
     const char** glfwExtensions     = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
@@ -712,7 +716,7 @@ private:
         .applicationVersion = 1,
         .pEngineName        = "minimal_latest",
         .engineVersion      = 1,
-        .apiVersion         = VK_API_VERSION_1_3,
+        .apiVersion         = m_apiVersion,
     };
 
     // Add extensions requested by GLFW
@@ -834,7 +838,7 @@ private:
    * It is used to create resources, allocate memory, and submit command buffers to the GPU.
    * The logical device is created with the physical device and the queue family that is used.
    * The logical device is created with the extensions and features that are needed.
-   * Note: the feature structure is used to add all features up to Vulkan 1.3, but it can be used to add specific features.
+   * Note: the feature structure is used to add all features up to Vulkan 1.4, but it can be used to add specific features.
    *       This class does not add any specific feature, or extension, but it can be added by the user.
   -*/
   void initLogicalDevice()
@@ -852,25 +856,16 @@ private:
         .pQueuePriorities = &queuePriority,
     };
 
-    // Chaining all features up to Vulkan 1.3
+    // Chaining all features up to Vulkan 1.4
     pNextChainPushFront(&m_features11, &m_features12);
     pNextChainPushFront(&m_features11, &m_features13);
+    pNextChainPushFront(&m_features11, &m_features14);
 
     /*-- 
      * Check if the device supports the required extensions 
      * Because we cannot request a device with extension it is not supporting
     -*/
     getAvailableDeviceExtensions();
-    if(extensionIsAvailable(VK_KHR_MAINTENANCE_5_EXTENSION_NAME, m_deviceExtensionsAvailable))
-    {
-      pNextChainPushFront(&m_features11, &m_maintenance5Features);
-      m_deviceExtensions.push_back(VK_KHR_MAINTENANCE_5_EXTENSION_NAME);
-    }
-    if(extensionIsAvailable(VK_KHR_MAINTENANCE_6_EXTENSION_NAME, m_deviceExtensionsAvailable))
-    {
-      pNextChainPushFront(&m_features11, &m_maintenance6Features);
-      m_deviceExtensions.push_back(VK_KHR_MAINTENANCE_6_EXTENSION_NAME);
-    }
     if(extensionIsAvailable(VK_KHR_PUSH_DESCRIPTOR_EXTENSION_NAME, m_deviceExtensionsAvailable))
     {
       m_deviceExtensions.push_back(VK_KHR_PUSH_DESCRIPTOR_EXTENSION_NAME);
@@ -896,7 +891,7 @@ private:
       m_deviceExtensions.push_back(VK_EXT_SWAPCHAIN_MAINTENANCE_1_EXTENSION_NAME);
     }
 
-    // ImGui - Fix (Not using Vulkan 1.3 API) 
+    // ImGui - Fix (Not using Vulkan 1.4 API)
     m_deviceExtensions.push_back(VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME);
 
     // Requesting all supported features, which will then be activated in the device
@@ -906,8 +901,8 @@ private:
 
     ASSERT(m_features13.dynamicRendering, "Dynamic rendering required, update driver!");
     ASSERT(m_features13.maintenance4, "Extension VK_KHR_maintenance4 required, update driver!");  // vkGetDeviceBufferMemoryRequirementsKHR, ...
-    ASSERT(m_maintenance5Features.maintenance5, "Extension VK_KHR_maintenance5 required, update driver!");  // VkBufferUsageFlags2KHR, ...
-    ASSERT(m_maintenance6Features.maintenance6, "Extension VK_KHR_maintenance6 required, update driver!");  // vkCmdPushConstants2KHR, vkCmdBindDescriptorSets2KHR
+    ASSERT(m_features14.maintenance5, "Extension VK_KHR_maintenance5 required, update driver!");  // VkBufferUsageFlags2KHR, ...
+    ASSERT(m_features14.maintenance6, "Extension VK_KHR_maintenance6 required, update driver!");  // vkCmdPushConstants2KHR, vkCmdBindDescriptorSets2KHR
 
     // Get information about what the device can do
     VkPhysicalDeviceProperties2 deviceProperties{.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2};
@@ -976,6 +971,7 @@ private:
 
 
   // --- Members ------------------------------------------------------------------------------------------------------------
+  uint32_t m_apiVersion{0};  // The Vulkan API version
 
   // Instance extension, extra extensions can be added here
   std::vector<const char*> m_instanceExtensions = {VK_KHR_GET_SURFACE_CAPABILITIES_2_EXTENSION_NAME};
@@ -986,10 +982,9 @@ private:
   VkPhysicalDeviceVulkan11Features m_features11{.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_FEATURES};
   VkPhysicalDeviceVulkan12Features m_features12{.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES};
   VkPhysicalDeviceVulkan13Features m_features13{.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES};
+  VkPhysicalDeviceVulkan14Features m_features14{.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_4_FEATURES};
   VkPhysicalDeviceSwapchainMaintenance1FeaturesEXT m_swapchainFeatures{
       .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SWAPCHAIN_MAINTENANCE_1_FEATURES_EXT};
-  VkPhysicalDeviceMaintenance5FeaturesKHR m_maintenance5Features{.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_5_FEATURES_KHR};
-  VkPhysicalDeviceMaintenance6FeaturesKHR m_maintenance6Features{.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_6_FEATURES_KHR};
   VkPhysicalDeviceExtendedDynamicStateFeaturesEXT m_dynamicStateFeatures{
       .sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTENDED_DYNAMIC_STATE_FEATURES_EXT};
   VkPhysicalDeviceExtendedDynamicState2FeaturesEXT m_dynamicState2Features{
@@ -2147,9 +2142,10 @@ private:
 
     // Initialize the VMA allocator
     m_allocator.init(VmaAllocatorCreateInfo{
-        .physicalDevice = m_context.getPhysicalDevice(),
-        .device         = m_context.getDevice(),
-        .instance       = m_context.getInstance(),
+        .physicalDevice   = m_context.getPhysicalDevice(),
+        .device           = m_context.getDevice(),
+        .instance         = m_context.getInstance(),
+        .vulkanApiVersion = m_context.getApiVersion(),
     });
 
     // Texture sampler pool
@@ -2662,7 +2658,7 @@ private:
         .size       = sizeof(shaderio::PushConstantCompute),
         .pValues    = &pushValues,
     };
-    vkCmdPushConstants2KHR(cmd, &pushInfo);
+    vkCmdPushConstants2(cmd, &pushInfo);
 
     // Bind the compute shader
     vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_COMPUTE, m_computePipeline);
@@ -2738,7 +2734,7 @@ private:
         .pDescriptorWrites    = writeDescriptorSet.data(),
     };
     // This is a push descriptor, allowing synchronization and dynamically changing data
-    vkCmdPushDescriptorSet2KHR(cmd, &pushDescriptorSetInfo);
+    vkCmdPushDescriptorSet2(cmd, &pushDescriptorSetInfo);
 
 
     // Push constant information, see usage later
@@ -2805,14 +2801,14 @@ private:
         .descriptorSetCount = 1,
         .pDescriptorSets    = &m_textureDescriptorSet,
     };
-    vkCmdBindDescriptorSets2KHR(cmd, &bindDescriptorSetsInfo);
+    vkCmdBindDescriptorSets2(cmd, &bindDescriptorSetsInfo);
 
     // Binding the Buffer containing all our Vertex
     vkCmdBindVertexBuffers(cmd, 0, 1, &m_vertexBuffer.buffer, offsets);
 
     // Push constant is information that is passed to the shader at each draw call.
     pushValues.color = glm::vec3(1, 0, 0);
-    vkCmdPushConstants2KHR(cmd, &pushInfo);
+    vkCmdPushConstants2(cmd, &pushInfo);
 
     // Draw the first triangle without texture (pipeline with specialization constant set to false)
     vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, m_graphicsPipelineWithoutTexture);
@@ -2820,7 +2816,7 @@ private:
 
     // Push constant again, with different information
     pushValues.color = glm::vec3(0, 1, 0);
-    vkCmdPushConstants2KHR(cmd, &pushInfo);
+    vkCmdPushConstants2(cmd, &pushInfo);
 
     // Draw the second triangle with texture
     vkCmdBindPipeline(cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, m_graphicsPipelineWithTexture);
@@ -3073,6 +3069,14 @@ private:
   -*/
   void createDescriptorPool()
   {
+    VkPhysicalDeviceProperties deviceProperties;
+    vkGetPhysicalDeviceProperties(m_context.getPhysicalDevice(), &deviceProperties);
+
+    // We don't need to set the exact number of descriptor sets, but we need to set a maximum
+    const uint32_t safegardSize = 2;
+    uint32_t maxDescriptorSets = std::min(1000U, deviceProperties.limits.maxDescriptorSetUniformBuffers - safegardSize);
+    m_maxTextures = std::min(m_maxTextures, deviceProperties.limits.maxDescriptorSetSampledImages - safegardSize);
+
     const std::vector<VkDescriptorPoolSize> poolSizes{
         {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, m_maxTextures},
     };
@@ -3081,7 +3085,7 @@ private:
         .sType = VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,
         .flags = VK_DESCRIPTOR_POOL_CREATE_UPDATE_AFTER_BIND_BIT |  //  allows descriptor sets to be updated after they have been bound to a command buffer
                  VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT,  // individual descriptor sets can be freed from the descriptor pool
-        .maxSets       = 1000,  // Allowing to create many sets (ImGui uses this for textures)
+        .maxSets       = maxDescriptorSets,  // Allowing to create many sets (ImGui uses this for textures)
         .poolSizeCount = uint32_t(poolSizes.size()),
         .pPoolSizes    = poolSizes.data(),
     };

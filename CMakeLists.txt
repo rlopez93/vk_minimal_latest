@@ -56,28 +56,36 @@ CPMAddPackage(
 CPMAddPackage(
   NAME glm
   GITHUB_REPOSITORY g-truc/glm
-  GIT_TAG 1.0.1
+  GIT_TAG master
 )
+set_property(TARGET glm PROPERTY FOLDER "ThirdParty")
 
 # Include Volk
 CPMAddPackage(
   NAME volk
   GITHUB_REPOSITORY zeux/volk
-  GIT_TAG 1.3.295
+  GIT_TAG 1.4.304
 )
+set_property(TARGET volk PROPERTY FOLDER "ThirdParty")
 
 # Include VMA
 CPMAddPackage(
   NAME VulkanMemoryAllocator
   GITHUB_REPOSITORY GPUOpen-LibrariesAndSDKs/VulkanMemoryAllocator
-  GIT_TAG v3.1.0
+  GIT_TAG master
+  DOWNLOAD_ONLY
 )
+set(VMA_SOURCE ${VulkanMemoryAllocator_SOURCE_DIR}/include/vk_mem_alloc.h)
+target_include_directories(${MYPROJ} PRIVATE ${VulkanMemoryAllocator_SOURCE_DIR}/include)
+target_sources(${MYPROJ} PRIVATE ${VMA_SOURCE})
+source_group("vma" FILES ${VMA_SOURCE})
 
 #include ImGui
 CPMAddPackage(
   NAME imgui
   GITHUB_REPOSITORY ocornut/imgui
   GIT_TAG docking
+  DOWNLOAD_ONLY
 )
 set(IMGUI_SOURCES 
   ${imgui_SOURCE_DIR}/imgui.cpp
@@ -91,10 +99,11 @@ set(IMGUI_SOURCES
   ${imgui_SOURCE_DIR}/backends/imgui_impl_vulkan.cpp
   ${imgui_SOURCE_DIR}/backends/imgui_impl_vulkan.h
 )
-target_include_directories(${MYPROJ} PRIVATE ${imgui_SOURCE_DIR})
-target_sources(${MYPROJ} PRIVATE ${IMGUI_SOURCES})
-target_compile_definitions(${MYPROJ} PRIVATE IMGUI_IMPL_VULKAN_USE_VOLK)
-source_group("Imgui" FILES ${IMGUI_SOURCES})
+add_library(imgui STATIC ${IMGUI_SOURCES})
+target_include_directories(imgui PUBLIC ${imgui_SOURCE_DIR})
+target_compile_definitions(imgui PUBLIC IMGUI_IMPL_VULKAN_USE_VOLK)
+target_link_libraries(imgui PUBLIC volk glfw)
+set_property(TARGET imgui PROPERTY FOLDER "ThirdParty")
 
 # Download stb_image.h
 set(STB_IMAGE_URL "https://raw.githubusercontent.com/nothings/stb/master/stb_image.h")
@@ -103,20 +112,19 @@ if(NOT EXISTS ${STB_IMAGE_PATH})
     message(STATUS "Downloading stb_image.h...")
     file(DOWNLOAD ${STB_IMAGE_URL} ${STB_IMAGE_PATH})
 endif()
+target_sources(${MYPROJ} PRIVATE ${STB_IMAGE_PATH})
+source_group("stb" FILES ${STB_IMAGE_PATH})
 target_include_directories(${MYPROJ} PRIVATE "${CMAKE_BINARY_DIR}")
 
 # Link libraries and include directories
 target_link_libraries(${MYPROJ} PRIVATE
   glfw
   volk
-  VulkanMemoryAllocator
+  imgui
+  glm
 )
 
-target_include_directories(${MYPROJ} PRIVATE
-  ${CMAKE_CURRENT_SOURCE_DIR}
-  ${glm_SOURCE_DIR}
-  ${imgui_SOURCE_DIR}
-  ${VulkanMemoryAllocator_SOURCE_DIR}/include
+target_include_directories(${MYPROJ} PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}}
 )
 
 # Define VK_NO_PROTOTYPES to avoid including Vulkan prototypes
@@ -134,7 +142,6 @@ foreach(SHADER ${SHADER_FILES})
   set(OUTPUT_FILE "${CMAKE_BINARY_DIR}/_autogen/${SHADER_NAME}.h")
   set(_COMMAND ${Vulkan_GLSLANG_VALIDATOR_EXECUTABLE} -g -D_glsl --target-env vulkan1.3 --vn ${VN_SHADER_NAME} -o ${OUTPUT_FILE} ${SHADER})
   add_custom_command(
-    PRE_BUILD
     OUTPUT ${OUTPUT_FILE}
     COMMAND ${_COMMAND}
     # COMMENT  "${_COMMAND}"
@@ -167,7 +174,8 @@ if( Vulkan_SLANGC_EXECUTABLE)
         -emit-spirv-directly
         -force-glsl-scalar-layout
         -fvk-use-entrypoint-name
-        -g3
+        -g3  # Enable debug information
+        -O0  # Disable optimization (spirv-opt)
         -source-embed-style text     
     )
 
@@ -182,8 +190,8 @@ if( Vulkan_SLANGC_EXECUTABLE)
         ${_SLANG_FLAGS} 
         -source-embed-name ${VN_SHADER_NAME}
         -o ${OUTPUT_FILE} ${SHADER})
+      
       add_custom_command(
-        PRE_BUILD
         OUTPUT ${OUTPUT_FILE}
         COMMAND ${_COMMAND}
         MAIN_DEPENDENCY ${SHADER}
@@ -209,10 +217,9 @@ target_sources(${MYPROJ} PRIVATE ${SHADER_FILES} ${SHADER_H_FILES})
 target_sources(${MYPROJ} PRIVATE ${SHADER_HEADERS})
 
 
-
-# Include the _autogen directory
+# Include the shader and _autogen directory
 target_include_directories(${MYPROJ} PRIVATE "${CMAKE_BINARY_DIR}")
-
+target_include_directories(${MYPROJ} PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
 
 
 # Copy .jpg image next to the executable
