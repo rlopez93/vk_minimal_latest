@@ -2781,7 +2781,7 @@ private:
     /*-- 
      * Transition the swapchain image to the color attachment layout, needed when using dynamic rendering 
      -*/
-    utils::cmdTransitionImageLayout(cmd, m_gBuffer.getColorImage(), VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+    utils::cmdTransitionImageLayout(cmd, m_gBuffer.getColorImage(), VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
     vkCmdBeginRendering(cmd, &renderingInfo);
 
     // **Dynamic**  Defining the size of the viewport and the scissor
