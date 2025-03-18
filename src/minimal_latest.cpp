@@ -219,9 +219,10 @@ struct Vertex : public shaderio::Vertex
   /*--
    * The binding description is used to describe at which rate to load data from memory throughout the vertices.
   -*/
-  static std::vector<VkVertexInputBindingDescription> getBindingDescription()
+  static auto getBindingDescription()
   {
-    return {{.binding = 0, .stride = sizeof(Vertex), .inputRate = VK_VERTEX_INPUT_RATE_VERTEX}};
+    return std::to_array<VkVertexInputBindingDescription>(
+        {{.binding = 0, .stride = sizeof(Vertex), .inputRate = VK_VERTEX_INPUT_RATE_VERTEX}});
   }
 
   /*--
@@ -229,18 +230,17 @@ struct Vertex : public shaderio::Vertex
    * a chunk of vertex data originating from a binding description.
    * See in the vertex shader how the location is used to access the data.
   -*/
-  static std::vector<VkVertexInputAttributeDescription> getAttributeDescriptions()
+  static auto getAttributeDescriptions()
   {
-    return {
-        {.location = shaderio::LVPosition, .format = VK_FORMAT_R32G32B32_SFLOAT, .offset = uint32_t(offsetof(Vertex, position))},
-        {.location = shaderio::LVColor, .format = VK_FORMAT_R32G32B32_SFLOAT, .offset = uint32_t(offsetof(Vertex, color))},
-        {.location = shaderio::LVTexCoord, .format = VK_FORMAT_R32G32_SFLOAT, .offset = uint32_t(offsetof(Vertex, texCoord))},
-    };
+    return std::to_array<VkVertexInputAttributeDescription>(
+        {{.location = shaderio::LVPosition, .format = VK_FORMAT_R32G32B32_SFLOAT, .offset = uint32_t(offsetof(Vertex, position))},
+         {.location = shaderio::LVColor, .format = VK_FORMAT_R32G32B32_SFLOAT, .offset = uint32_t(offsetof(Vertex, color))},
+         {.location = shaderio::LVTexCoord, .format = VK_FORMAT_R32G32_SFLOAT, .offset = uint32_t(offsetof(Vertex, texCoord))}});
   }
 };
 
 // 2x3 vertices with a position, color and texCoords, make two CCW triangles
-static const std::vector<shaderio::Vertex> s_vertices = {
+static const auto s_vertices = std::to_array<shaderio::Vertex>({
     {{0.0F, -0.5F, 0.5F}, {1.0F, 0.0F, 0.0F}, {0.5F, 0.5F}},  // Colored triangle
     {{-0.5F, 0.5F, 0.5F}, {0.0F, 0.0F, 1.0F}, {0.5F, 0.5F}},
     {{0.5F, 0.5F, 0.5F}, {0.0F, 1.0F, 0.0F}, {0.5F, 0.5F}},
@@ -248,10 +248,11 @@ static const std::vector<shaderio::Vertex> s_vertices = {
     {{0.1F, -0.4F, 0.75F}, {.3F, .3F, .3F}, {0.5F, 1.0F}},  // White triangle (textured)
     {{-0.4F, 0.6F, 0.25F}, {1.0F, 1.0F, 1.0F}, {1.0F, 0.0F}},
     {{0.6F, 0.6F, 0.75F}, {.7F, .7F, .7F}, {0.0F, 0.0F}},
-};
+});
+
 
 // Points stored in a buffer and retrieved using buffer reference (flashing points)
-static const std::vector<glm::vec2> s_points = {{0.05F, 0.0F}, {-0.05F, 0.0F}, {0.0F, -0.05F}, {0.0F, 0.05F}};
+static const auto s_points = std::to_array<glm::vec2>({{0.05F, 0.0F}, {-0.05F, 0.0F}, {0.0F, -0.05F}, {0.0F, 0.05F}});
 
 
 //--- Vulkan Helpers ------------------------------------------------------------------------------------------------------------
@@ -1302,11 +1303,10 @@ private:
       return result;
     }
 
-    const std::vector<VkSurfaceFormat2KHR> preferredFormats = {
-        VkSurfaceFormat2KHR{.sType         = VK_STRUCTURE_TYPE_SURFACE_FORMAT_2_KHR,
-                            .surfaceFormat = {VK_FORMAT_B8G8R8A8_UNORM, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR}},
-        VkSurfaceFormat2KHR{.sType         = VK_STRUCTURE_TYPE_SURFACE_FORMAT_2_KHR,
-                            .surfaceFormat = {VK_FORMAT_R8G8B8A8_UNORM, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR}}};
+    const auto preferredFormats = std::to_array<VkSurfaceFormat2KHR>({
+        {.sType = VK_STRUCTURE_TYPE_SURFACE_FORMAT_2_KHR, .surfaceFormat = {VK_FORMAT_B8G8R8A8_UNORM, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR}},
+        {.sType = VK_STRUCTURE_TYPE_SURFACE_FORMAT_2_KHR, .surfaceFormat = {VK_FORMAT_R8G8B8A8_UNORM, VK_COLOR_SPACE_SRGB_NONLINEAR_KHR}},
+    });
 
     // Check available formats against the preferred formats.
     for(const auto& preferredFormat : preferredFormats)
@@ -2883,14 +2883,14 @@ private:
     }};
 
     // Describe the layout of the Vertex in the Buffer, which is passed to the vertex shader
-    const std::vector<VkVertexInputBindingDescription>&   bindingDescription    = Vertex::getBindingDescription();
-    const std::vector<VkVertexInputAttributeDescription>& attributeDescriptions = Vertex::getAttributeDescriptions();
-    const VkPipelineVertexInputStateCreateInfo            vertexInputInfo       = {
-                         .sType                           = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
-                         .vertexBindingDescriptionCount   = uint32_t(bindingDescription.size()),
-                         .pVertexBindingDescriptions      = bindingDescription.data(),
-                         .vertexAttributeDescriptionCount = uint32_t(attributeDescriptions.size()),
-                         .pVertexAttributeDescriptions    = attributeDescriptions.data(),
+    const auto&                                bindingDescription    = Vertex::getBindingDescription();
+    const auto&                                attributeDescriptions = Vertex::getAttributeDescriptions();
+    const VkPipelineVertexInputStateCreateInfo vertexInputInfo       = {
+              .sType                           = VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
+              .vertexBindingDescriptionCount   = uint32_t(bindingDescription.size()),
+              .pVertexBindingDescriptions      = bindingDescription.data(),
+              .vertexAttributeDescriptionCount = uint32_t(attributeDescriptions.size()),
+              .pVertexAttributeDescriptions    = attributeDescriptions.data(),
     };
 
     // The input assembly is used to describe how the vertices are assembled into primitives (triangles)
@@ -2905,7 +2905,7 @@ private:
      * If we don't do this, we need to recreate the pipeline when the window is resized.
      * NOTE: more dynamic states can be added, but performance 'can' be impacted.
     -*/
-    const std::vector<VkDynamicState> dynamicStates = {
+    const std::array<VkDynamicState, 2> dynamicStates = {
         VK_DYNAMIC_STATE_VIEWPORT_WITH_COUNT,
         VK_DYNAMIC_STATE_SCISSOR_WITH_COUNT,
     };
@@ -2925,7 +2925,7 @@ private:
         .lineWidth   = 1.0f,
     };
 
-    // No multisampling
+    // No multi-sampling
     const VkPipelineMultisampleStateCreateInfo multisamplingInfo = {
         .sType                = VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,
         .rasterizationSamples = VK_SAMPLE_COUNT_1_BIT,
@@ -3077,7 +3077,7 @@ private:
     uint32_t maxDescriptorSets = std::min(1000U, deviceProperties.limits.maxDescriptorSetUniformBuffers - safegardSize);
     m_maxTextures = std::min(m_maxTextures, deviceProperties.limits.maxDescriptorSetSampledImages - safegardSize);
 
-    const std::vector<VkDescriptorPoolSize> poolSizes{
+    const std::array<VkDescriptorPoolSize, 1> poolSizes{
         {VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, m_maxTextures},
     };
 
@@ -3108,14 +3108,14 @@ private:
       static uint32_t numTextures = m_maxTextures;  // We don't need to set the exact number of texture the scene have.
 
       // In comment, the layout for a storage buffer, which is not used in this sample, but rather a push descriptor (below)
-      const std::vector<VkDescriptorSetLayoutBinding> layoutBindings{
+      const std::array<VkDescriptorSetLayoutBinding, 1> layoutBindings{{
           {.binding         = shaderio::LBindTextures,
            .descriptorType  = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
            .descriptorCount = numTextures,
            .stageFlags      = VK_SHADER_STAGE_ALL_GRAPHICS},
           // This is if we would add another binding for the scene info, but instead we make another set, see below
           // {.binding = 1, .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, .descriptorCount = 1, .stageFlags = VK_SHADER_STAGE_ALL_GRAPHICS},
-      };
+      }};
 
       const VkDescriptorBindingFlags flags[] = {
           // Flags for binding 0 (texture array):
@@ -3156,8 +3156,8 @@ private:
     // Second this is another set which will be pushed
     {
       // This is the scene buffer information
-      const std::vector<VkDescriptorSetLayoutBinding> layoutBindings{
-          {.binding = 0, .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, .descriptorCount = 1, .stageFlags = VK_SHADER_STAGE_ALL_GRAPHICS}};
+      const std::array<VkDescriptorSetLayoutBinding, 1> layoutBindings{
+          {{.binding = 0, .descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, .descriptorCount = 1, .stageFlags = VK_SHADER_STAGE_ALL_GRAPHICS}}};
       const VkDescriptorSetLayoutCreateInfo descriptorSetLayoutInfo{
           .sType        = VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
           .flags        = VK_DESCRIPTOR_SET_LAYOUT_CREATE_PUSH_DESCRIPTOR_BIT_KHR,
@@ -3189,12 +3189,12 @@ private:
     DBG_VK_NAME(sampler);
 
     // The image info
-    std::vector<VkDescriptorImageInfo> imageInfos;
-    imageInfos.push_back({.sampler = sampler, .imageView = m_image[0].view, .imageLayout = m_image[m_imageID].layout});
-    imageInfos.push_back({.sampler = sampler, .imageView = m_image[1].view, .imageLayout = m_image[m_imageID].layout});
+    std::array<VkDescriptorImageInfo, 2> imageInfos{{
+        {.sampler = sampler, .imageView = m_image[0].view, .imageLayout = m_image[m_imageID].layout},
+        {.sampler = sampler, .imageView = m_image[1].view, .imageLayout = m_image[m_imageID].layout},
+    }};
 
-    std::vector<VkWriteDescriptorSet> writeDescriptorSets;
-    writeDescriptorSets.push_back({
+    std::array<VkWriteDescriptorSet, 1> writeDescriptorSets{{{
         .sType           = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
         .dstSet          = m_textureDescriptorSet,  // Only needed if we are using a descriptor set, not push descriptor
         .dstBinding      = shaderio::LBindTextures,  // layout(binding = 0) in the fragment shader
@@ -3202,7 +3202,7 @@ private:
         .descriptorCount = uint32_t(imageInfos.size()),
         .descriptorType  = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
         .pImageInfo      = imageInfos.data(),
-    });
+    }}};
 
     // This is if the scene info buffer if part of the descriptor set layout (we have it in a separate set/layout)
     // VkDescriptorBufferInfo bufferInfo = {.buffer = m_sceneInfoBuffer.buffer, .offset = 0, .range = VK_WHOLE_SIZE};
