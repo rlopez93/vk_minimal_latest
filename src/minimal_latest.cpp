@@ -1220,7 +1220,7 @@ public:
    * This function handles synchronization with the previous frame and acquires the next image from the swapchain.
    * The command buffer is reset, ready for new rendering commands.
   -*/
-  void acquireNextImage(VkDevice device)
+  VkResult acquireNextImage(VkDevice device)
   {
     ASSERT(m_needRebuild == false, "Swapbuffer need to call reinitResources()");
 
@@ -1238,6 +1238,7 @@ public:
     {
       ASSERT(result == VK_SUCCESS || result == VK_SUBOPTIMAL_KHR, "Couldn't aquire swapchain image");
     }
+    return result;
   }
 
   /*--
@@ -2393,6 +2394,8 @@ private:
   void drawFrame()
   {
     VkCommandBuffer cmd = beginFrame();
+    if(cmd == VK_NULL_HANDLE)
+      return;  // Swapchain needs to be rebuilt
 
     /*-- The ImGui code -*/
 
@@ -2490,9 +2493,11 @@ private:
     VK_CHECK(vkBeginCommandBuffer(cmd, &beginInfo));
 
     // Acquire the image to render into
-    m_swapchain.acquireNextImage(device);
+    VkResult result = m_swapchain.acquireNextImage(device);
+    if(result == VK_SUCCESS || result == VK_SUBOPTIMAL_KHR)
+      return cmd;
 
-    return cmd;
+    return {};
   }
 
   /*--
