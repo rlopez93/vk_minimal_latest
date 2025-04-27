@@ -2101,12 +2101,7 @@ public:
 
       // ImGui::ShowDemoWindow();
       drawFrame();
-      // Update and Render additional Platform Windows (floating windows)
-      if((ImGui::GetIO().ConfigFlags & ImGuiConfigFlags_ViewportsEnable) != 0)
-      {
-        ImGui::UpdatePlatformWindows();
-        ImGui::RenderPlatformWindowsDefault();
-      }
+
 
       ImGui::EndFrame();
     }
@@ -2449,6 +2444,13 @@ private:
     endDynamicRenderingToSwapchain(cmd);
 
     endFrame(cmd);
+
+    // Update and Render additional Platform Windows (floating windows)
+    if((ImGui::GetIO().ConfigFlags & ImGuiConfigFlags_ViewportsEnable) != 0)
+    {
+      ImGui::UpdatePlatformWindows();
+      ImGui::RenderPlatformWindowsDefault();
+    }
   }
 
   /*---
