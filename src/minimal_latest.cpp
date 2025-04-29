@@ -140,6 +140,8 @@ this regular expression:
 -*/
 #ifdef _WIN32
 #define GLFW_EXPOSE_NATIVE_WIN32
+#elif defined(__linux__)
+#include <signal.h>  // For SIGINT
 #endif
 #include <GLFW/glfw3.h>
 
@@ -694,7 +696,7 @@ private:
     {
 #if defined(_MSVC_LANG)
       __debugbreak();
-#elif defined(LINUX)
+#elif defined(__linux__)
       raise(SIGTRAP);
 #endif
     }
@@ -1128,11 +1130,19 @@ public:
     DBG_VK_NAME(m_swapChain);
 
     // Retrieve the swapchain images
-    uint32_t imageCount;
-    vkGetSwapchainImagesKHR(m_device, m_swapChain, &imageCount, nullptr);
-    ASSERT(m_maxFramesInFlight == imageCount, "Wrong swapchain setup");
-    std::vector<VkImage> swapImages(imageCount);
-    vkGetSwapchainImagesKHR(m_device, m_swapChain, &imageCount, swapImages.data());
+    {
+      uint32_t imageCount;
+      vkGetSwapchainImagesKHR(m_device, m_swapChain, &imageCount, nullptr);
+      LOGI("m_maxFramesInFlight: %u, imageCount: %u", m_maxFramesInFlight, imageCount);
+      ASSERT(m_maxFramesInFlight <= imageCount, "Wrong swapchain setup");
+      m_maxFramesInFlight = imageCount;  // Use the number of images in the swapchain
+    }
+    std::vector<VkImage> swapImages(m_maxFramesInFlight);
+    vkGetSwapchainImagesKHR(m_device, m_swapChain, &m_maxFramesInFlight, swapImages.data());
+    for(uint32_t i = 0; i < m_maxFramesInFlight; i++)
+    {
+      LOGI("Swapchain image %u: %p", i, swapImages[i]);
+    }
 
     // Store the swapchain images and create views for them
     m_nextImages.resize(m_maxFramesInFlight);
@@ -2102,8 +2112,13 @@ public:
       // ImGui::ShowDemoWindow();
       drawFrame();
 
-
+      // Update and Render additional Platform Windows (floating windows)
       ImGui::EndFrame();
+      if((ImGui::GetIO().ConfigFlags & ImGuiConfigFlags_ViewportsEnable) != 0)
+      {
+        ImGui::UpdatePlatformWindows();
+        ImGui::RenderPlatformWindowsDefault();
+      }
     }
   }
 
@@ -2444,13 +2459,6 @@ private:
     endDynamicRenderingToSwapchain(cmd);
 
     endFrame(cmd);
-
-    // Update and Render additional Platform Windows (floating windows)
-    if((ImGui::GetIO().ConfigFlags & ImGuiConfigFlags_ViewportsEnable) != 0)
-    {
-      ImGui::UpdatePlatformWindows();
-      ImGui::RenderPlatformWindowsDefault();
-    }
   }
 
   /*---
