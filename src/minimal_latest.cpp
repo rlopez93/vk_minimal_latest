@@ -1133,16 +1133,11 @@ public:
     {
       uint32_t imageCount;
       vkGetSwapchainImagesKHR(m_device, m_swapChain, &imageCount, nullptr);
-      LOGI("m_maxFramesInFlight: %u, imageCount: %u", m_maxFramesInFlight, imageCount);
       ASSERT(m_maxFramesInFlight <= imageCount, "Wrong swapchain setup");
       m_maxFramesInFlight = imageCount;  // Use the number of images in the swapchain
     }
     std::vector<VkImage> swapImages(m_maxFramesInFlight);
     vkGetSwapchainImagesKHR(m_device, m_swapChain, &m_maxFramesInFlight, swapImages.data());
-    for(uint32_t i = 0; i < m_maxFramesInFlight; i++)
-    {
-      LOGI("Swapchain image %u: %p", i, swapImages[i]);
-    }
 
     // Store the swapchain images and create views for them
     m_nextImages.resize(m_maxFramesInFlight);
