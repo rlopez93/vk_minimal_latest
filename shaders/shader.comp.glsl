@@ -16,7 +16,7 @@ layout(push_constant, scalar) uniform PushConstant_
 };
 
 // Buffer reference, address of buffer in the push constant
-layout(buffer_reference, scalar) readonly buffer Vertex_
+layout(buffer_reference, scalar) buffer Vertex_
 {
   Vertex _[];
 };
