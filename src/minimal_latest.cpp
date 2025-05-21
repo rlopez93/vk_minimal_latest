@@ -1047,7 +1047,7 @@ public:
   VkFormat    getImageFormat() const { return m_imageFormat; }
   uint32_t    getMaxFramesInFlight() const { return m_maxFramesInFlight; }
   VkSemaphore getWaitSemaphores() const { return m_frameResources[m_currentFrame].imageAvailableSemaphore; }
-  VkSemaphore getSignalSemaphores() const { return m_frameResources[m_currentFrame].renderFinishedSemaphore; }
+  VkSemaphore getSignalSemaphores() const { return m_frameResources[m_nextImageIndex].renderFinishedSemaphore; }
 
   // Initialize the swapchain with the provided context and surface, then we can create and re-create it
   void init(VkPhysicalDevice physicalDevice, VkDevice device, const QueueInfo& queue, VkSurfaceKHR surface, VkCommandPool cmdPool)
@@ -1253,7 +1253,7 @@ public:
   -*/
   void presentFrame(VkQueue queue)
   {
-    auto& frame = m_frameResources[m_currentFrame];
+    auto& frame = m_frameResources[m_nextImageIndex];
 
     // Setup the presentation info, linking the swapchain and the image index
     const VkPresentInfoKHR presentInfo{
